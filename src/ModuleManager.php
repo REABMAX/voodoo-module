@@ -27,7 +27,7 @@ class ModuleManager implements ModuleManagerInterface
      */
     public function __construct(string $configurationFile, ModuleLoaderInterface $loader)
     {
-        $this->configuration = $this->useConfigurationFile($configurationFile);
+        $this->useConfigurationFile($configurationFile);
         $this->loader = $loader;
     }
 
