@@ -1,0 +1,21 @@
+{
+  "name": "voodoo/module",
+  "description": "Module manager package",
+  "minimum-stability": "stable",
+  "license": "proprietary",
+  "authors": [
+    {
+      "name": "Max Schröter",
+      "email": "reabmax@googlemail.com"
+    }
+  ],
+  "autoload": {
+    "psr-4": {
+      "Voodoo\\Module\\": "src/"
+    }
+  },
+  "require": {
+    "symfony/event-dispatcher": "v4.1.6",
+    "psr/container": "1.0.0"
+  }
+}
