@@ -4,6 +4,7 @@ namespace Voodoo\Module;
 
 use Psr\Container\ContainerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Voodoo\Module\Contracts\ModuleInterface;
 use Voodoo\Module\Contracts\ModuleLoaderInterface;
 use Voodoo\Module\Contracts\ModuleManagerInterface;
 use Voodoo\Module\Exception\ModuleConfigurationException;
@@ -37,7 +38,7 @@ class ModuleManager implements ModuleManagerInterface
     {
         $modules = $this->loadModules();
         foreach($modules as $module) {
-            $module->bootstrap($eventDispatcher, $container);
+            $this->callModuleBootstrap($module, $eventDispatcher, $container);
         }
     }
 
@@ -48,6 +49,16 @@ class ModuleManager implements ModuleManagerInterface
     {
         $this->assertConfigurationFileExists($configurationFile);
         $this->configuration = $this->getConfigurationFromFile($configurationFile);
+    }
+
+    /**
+     * @param ModuleInterface $module
+     * @param EventDispatcherInterface $eventDispatcher
+     * @param ContainerInterface $container
+     */
+    protected function callModuleBootstrap(ModuleInterface $module, EventDispatcherInterface $eventDispatcher, ContainerInterface $container)
+    {
+        $module->bootstrap($eventDispatcher, $container);
     }
 
     /**
