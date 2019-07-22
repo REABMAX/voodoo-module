@@ -3,31 +3,36 @@
 namespace Voodoo\Module;
 
 use Voodoo\Module\Contracts\ModuleInterface;
-use Voodoo\Module\Contracts\ModuleLoaderInterface;
+use Voodoo\Module\Contracts\ModuleResolverInterface;
 use Voodoo\Module\Exception\ModuleConfigurationException;
 
-class NewModuleLoader implements ModuleLoaderInterface
+/**
+ * Class NewModuleLoader
+ * @package Voodoo\Module
+ */
+class NewModuleResolver implements ModuleResolverInterface
 {
     /**
-     * @param string $fqdn
+     * @param string $fqcn
      * @return ModuleInterface
+     * @throws ModuleConfigurationException
      */
-    public function loadModule(string $fqdn): ModuleInterface
+    public function loadModule(string $fqcn): ModuleInterface
     {
-        $this->assertModuleExists($fqdn);
-        $module = new $fqdn();
+        $this->assertModuleExists($fqcn);
+        $module = new $fqcn();
         $this->assertModuleIsInstanceOfModuleInterface($module);
         return $module;
     }
 
     /**
-     * @param string $fqdn
+     * @param string $fqcn
      * @throws ModuleConfigurationException
      */
-    protected function assertModuleExists(string $fqdn)
+    protected function assertModuleExists(string $fqcn)
     {
-        if(!class_exists($fqdn)) {
-            throw new ModuleConfigurationException(printf("Module class %s does not exist.", $fqdn));
+        if(!class_exists($fqcn)) {
+            throw new ModuleConfigurationException(printf("Module class %s does not exist.", $fqcn));
         }
     }
 

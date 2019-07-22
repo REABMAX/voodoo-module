@@ -3,29 +3,41 @@
 namespace Voodoo\Module\Contracts;
 
 use Psr\Container\ContainerInterface;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 
 /**
  * Interface ModuleManagerInterface
- *
  * @package Voodoo\Module\Contracts
  */
 interface ModuleManagerInterface
 {
     /**
-     * Bootstraps all loaded modules
-     *
-     * @param EventDispatcherInterface $eventDispatcher
+     * @return array
+     */
+    public function getContainerConfiguration(): array;
+
+    /**
+     * @return array
+     */
+    public function getEventConfiguration(): array;
+
+    /**
+     * @return array
+     */
+    public function getRouterConfiguration(): array;
+
+    /**
+     * @return array
+     */
+    public function getModuleConfiguration(): array;
+
+    /**
+     * @return array
+     */
+    public function getMiddlewareConfiguration(): array;
+
+    /**
      * @param ContainerInterface $container
      * @return mixed
      */
-    public function bootstrapModules(EventDispatcherInterface $eventDispatcher, ContainerInterface $container);
-
-    /**
-     * Tell the module manager to use a configuration file
-     *
-     * @param string $configurationFile
-     * @return mixed
-     */
-    public function useConfigurationFile(string $configurationFile);
+    public function bootstrapModules(ContainerInterface $container);
 }

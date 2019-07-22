@@ -4,10 +4,14 @@ namespace Voodoo\Module;
 
 use Psr\Container\ContainerInterface;
 use Voodoo\Module\Contracts\ModuleInterface;
-use Voodoo\Module\Contracts\ModuleLoaderInterface;
+use Voodoo\Module\Contracts\ModuleResolverInterface;
 use Voodoo\Module\Exception\ModuleConfigurationException;
 
-class ContainerModuleLoader implements ModuleLoaderInterface
+/**
+ * Class ContainerModuleLoader
+ * @package Voodoo\Module
+ */
+class ContainerModuleResolver implements ModuleResolverInterface
 {
     /**
      * @var ContainerInterface
@@ -24,7 +28,9 @@ class ContainerModuleLoader implements ModuleLoaderInterface
     }
 
     /**
-     * @inheritdoc
+     * @param string $fqdn
+     * @return ModuleInterface
+     * @throws ModuleConfigurationException
      */
     public function loadModule(string $fqdn): ModuleInterface
     {

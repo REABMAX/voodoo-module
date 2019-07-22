@@ -3,12 +3,19 @@
 namespace Voodoo\Module;
 
 use Psr\Container\ContainerInterface;
-use Symfony\Component\EventDispatcher\EventDispatcherInterface;
+use Voodoo\Module\Contracts\ConfigurationProvider;
+use Voodoo\Module\Contracts\DiProvider;
+use Voodoo\Module\Contracts\EventProvider;
+use Voodoo\Module\Contracts\MiddlewareProvider;
 use Voodoo\Module\Contracts\ModuleInterface;
-use Voodoo\Module\Contracts\ModuleLoaderInterface;
+use Voodoo\Module\Contracts\ModuleResolverInterface;
 use Voodoo\Module\Contracts\ModuleManagerInterface;
-use Voodoo\Module\Exception\ModuleConfigurationException;
+use Voodoo\Module\Contracts\RouteProvider;
 
+/**
+ * Class ModuleManager
+ * @package Voodoo\Module
+ */
 class ModuleManager implements ModuleManagerInterface
 {
     /**
@@ -17,87 +24,148 @@ class ModuleManager implements ModuleManagerInterface
     protected $configuration = [];
 
     /**
-     * @var ModuleLoaderInterface
+     * @var ModuleResolverInterface
      */
     protected $loader;
 
     /**
-     * @param string $configurationFile
-     * @param ModuleLoaderInterface $loader
+     * @var array
      */
-    public function __construct(string $configurationFile, ModuleLoaderInterface $loader)
+    protected $modulesCache = [];
+
+    /**
+     * ModuleManager constructor.
+     * @param array $configuration
+     * @param ModuleResolverInterface $loader
+     */
+    public function __construct(array $configuration, ModuleResolverInterface $loader)
     {
-        $this->useConfigurationFile($configurationFile);
+        $this->configuration = $configuration;
         $this->loader = $loader;
     }
 
     /**
-     * @inheritdoc
+     * @return array
      */
-    public function bootstrapModules(EventDispatcherInterface $eventDispatcher, ContainerInterface $container)
+    public function getContainerConfiguration(): array
     {
         $modules = $this->loadModules();
-        foreach($modules as $module) {
-            $this->callModuleBootstrap($module, $eventDispatcher, $container);
+        $containerConfiguration = [];
+        /** @var ModuleInterface $module */
+        foreach ($modules as $module) {
+            if ($module instanceof DiProvider) {
+                $containerConfiguration = array_merge_recursive($containerConfiguration, $module->di());
+            }
         }
+        return $containerConfiguration;
+    }
+
+    /**
+     * @return array
+     */
+    public function getModuleConfiguration(): array
+    {
+        $modules = $this->loadModules();
+        $moduleConfiguration = [];
+        /** @var ModuleInterface $module */
+        foreach ($modules as $module) {
+            if ($module instanceof ConfigurationProvider) {
+                $moduleConfiguration = array_merge_recursive($moduleConfiguration, $module->configuration());
+            }
+        }
+        return $moduleConfiguration;
+    }
+
+    /**
+     * @return array
+     */
+    public function getEventConfiguration(): array
+    {
+        $modules = $this->loadModules();
+        $eventConfiguration = [];
+        /** @var ModuleInterface $module */
+        foreach ($modules as $module) {
+            if ($module instanceof EventProvider) {
+                $eventConfiguration = array_merge_recursive($eventConfiguration, $module->events());
+            }
+        }
+        return $eventConfiguration;
+    }
+
+    /**
+     * @return array
+     */
+    public function getRouterConfiguration(): array
+    {
+        $modules = $this->loadModules();
+        $routerConfiguration = [];
+        /** @var ModuleInterface $module */
+        foreach ($modules as $module) {
+            if ($module instanceof RouteProvider) {
+                $routerConfiguration = array_merge($routerConfiguration, $module->routes());
+            }
+        }
+        return $routerConfiguration;
+    }
+
+    /**
+     * @return array
+     */
+    public function getMiddlewareConfiguration(): array
+    {
+        $modules = $this->loadModules();
+        $middlewareConfiguration = [];
+        /** @var ModuleInterface $module */
+        foreach ($modules as $module) {
+            if ($module instanceof MiddlewareProvider) {
+                $middlewareConfiguration = array_merge($middlewareConfiguration, $module->middleware());
+            }
+        }
+        return $middlewareConfiguration;
     }
 
     /**
      * @inheritdoc
      */
-    public function useConfigurationFile(string $configurationFile)
+    public function bootstrapModules(ContainerInterface $container)
     {
-        $this->assertConfigurationFileExists($configurationFile);
-        $this->configuration = $this->getConfigurationFromFile($configurationFile);
+        $modules = $this->loadModules();
+        /** @var ModuleInterface $module */
+        foreach($modules as $module) {
+            $this->callModuleBootstrap($module, $container);
+        }
     }
 
     /**
      * @param ModuleInterface $module
-     * @param EventDispatcherInterface $eventDispatcher
      * @param ContainerInterface $container
      */
-    protected function callModuleBootstrap(ModuleInterface $module, EventDispatcherInterface $eventDispatcher, ContainerInterface $container)
+    protected function callModuleBootstrap(ModuleInterface $module, ContainerInterface $container)
     {
-        $module->bootstrap($eventDispatcher, $container);
+        $module->bootstrap($container);
     }
 
     /**
-     * @param string $file
-     * @return array
-     * @throws ModuleConfigurationException
-     */
-    protected function getConfigurationFromFile(string $file): array
-    {
-        $contents = include($file);
-        if(!is_array($contents)) {
-            throw new ModuleConfigurationException(printf("Configuration file must return an array", $file));
-        }
-        return $contents;
-    }
-
-    /**
-     * @param string $file
-     * @throws ModuleConfigurationException
-     */
-    protected function assertConfigurationFileExists(string $file)
-    {
-        if(!file_exists($file)) {
-            throw new ModuleConfigurationException(printf("Configuration file %s not found", $file));
-        }
-    }
-
-    /**
+     * @param bool $useCache
      * @return array
      */
-    protected function loadModules(): array
+    protected function loadModules(bool $useCache = true): array
     {
-        $modules = [];
-        if(!empty($this->configuration)) {
-            foreach($this->configuration as $fqdn) {
-                $modules[] = $this->loader->loadModule($fqdn);
+        if (!$useCache || empty($this->modulesCache)) {
+            $modules = [];
+            if(!empty($this->configuration)) {
+                foreach($this->configuration as $fqcn) {
+                    $modules[] = $this->loader->loadModule($fqcn);
+                }
             }
+
+            if ($useCache) {
+                $this->modulesCache = $modules;
+            }
+
+            return $modules;
         }
 
-        return $modules;
+        return $this->modulesCache;
     }
 }
