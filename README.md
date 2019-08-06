@@ -1,6 +1,6 @@
 # voodoo-module
 
-This package provides a basic module interface to use in modular projects.
+This package provides an implementation of the plugin pattern.
 
 ## Quick start
 
